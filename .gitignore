@@ -1,0 +1,6 @@
+# Worker runtime state: task queue, logs, heartbeat, lock.
+.worker/
+
+# Windows metadata
+Thumbs.db
+desktop.ini
