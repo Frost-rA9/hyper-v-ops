@@ -49,4 +49,12 @@ The worker header documents the queue protocol and the timeout directive.
 - **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files copied in, and a host driver update needs the copy repeated.
 - **A snapshot needs the adapter detached.** Hyper-V refuses the operation while GPU partitions are assigned to the VM. `scripts/hyperv/06-snapshot.ps1` detaches the adapter first.
 - **Builds before the FP16 fix produce a pale image on FP16 captures.** See `docs/color-fix.md`.
-- **The virtual display driver ignores the mode list in its settings file.** Set the frame rate on the client instead.
+- **The display mode comes from two places, and they must agree.** The virtual display
+  driver publishes the modes in `vdd_settings.xml`. A settings file with a single mode
+  leaves Windows with one choice. Sunshine then pins that choice when
+  `dd_resolution_option` is `manual`, and the client request never reaches the display.
+  Keep several resolutions in the settings file and set both `dd_resolution_option` and
+  `dd_refresh_rate_option` to `auto`, so the client picks the mode. The driver takes the
+  distinct width and height pairs as the resolution list, and the `global` block as the
+  refresh list for every resolution. The `refresh_rate` inside a `resolution` entry sets
+  the default for that pair.
