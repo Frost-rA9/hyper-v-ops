@@ -38,6 +38,14 @@ The worker header documents the queue protocol and the timeout directive.
 
 ## Constraints
 
+- **Warning: the answer file creates an administrator with no password.** It also
+  clears `LimitBlankPasswordUse`, which lets that account log on over the
+  network. PowerShell Direct needs the setting. Use the file for a local test VM
+  only. Do not reuse it on a host with a bridged adapter, remote desktop, or a
+  route from the internet.
+- **Warning: the worker runs any script in its jobs folder as administrator.** Any
+  account that can write to that folder can run code with the elevated token.
+  Use the worker on a single-user machine.
 - **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files copied in, and a host driver update needs the copy repeated.
 - **A snapshot needs the adapter detached.** Hyper-V refuses the operation while GPU partitions are assigned to the VM. `scripts/hyperv/06-snapshot.ps1` detaches the adapter first.
 - **Builds before the FP16 fix produce a pale image on FP16 captures.** See `docs/color-fix.md`.

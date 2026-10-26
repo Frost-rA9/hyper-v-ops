@@ -3,7 +3,14 @@
   Unattended install for a Hyper-V guest.
   Replace the computer name, the account name, and the time zone before you use
   this file on another host.
-  Replaces the answer file that ships on the tiny11 media, which only pins the
+
+  Warning: this file creates a local administrator with no password, and it
+  clears LimitBlankPasswordUse so that account can log on over the network.
+  PowerShell Direct needs that logon. Use this file for a local test VM only.
+  Do not reuse it on a host with a bridged adapter, remote desktop, or a route
+  from the internet.
+
+  Replaces the answer file that ships on the install media, which only pins the
   image index and hides the OEM registration screen.
 
   Design notes

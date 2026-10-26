@@ -14,6 +14,11 @@
 #         .worker\worker.log         worker level events
 #
 # A job may declare a timeout on its first line:  #TIMEOUT: 1800  (seconds)
+#
+# Trust boundary: the worker runs every *.ps1 in the jobs folder with its
+# elevated token, and it passes -ExecutionPolicy Bypass to each child process.
+# Any account that can write to that folder can therefore run code as
+# administrator. Use the worker on a single-user machine.
 
 param(
   [string]$Root,
