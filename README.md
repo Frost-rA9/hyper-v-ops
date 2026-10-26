@@ -22,6 +22,7 @@ An agent that operates this repository starts at `AGENTS.md`, which carries the 
 | `scripts/tools/analyze-shot.ps1` | Measure colour error from a screenshot |
 | `reference/calib-reference.png` | Calibration image: 16 grey steps, 8 colour patches |
 | `media/autounattend.xml` | Answer file for the unattended install |
+| `media/vdd_settings.xml` | Virtual display driver settings: two resolutions, three refresh rates |
 | `docs/color-fix.md` | FP16 capture colour fault: symptoms, measurements, root cause |
 
 ## Running the scripts
