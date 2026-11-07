@@ -59,8 +59,8 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 
 ### 6. Assign the GPU partition
 
-- Run: `Stop-VM -Name <vm>`, then `scripts/gpu-pv/01-host-partition.ps1 -Name <vm>`.
-- `Done`: `Get-VMGpuPartitionAdapter` reports a partition ID and a value for `CurrentPartitionVRAM`.
+- Run: `Stop-VM -Name <vm>`, then `scripts/gpu-pv/01-host-partition.ps1 -Name <vm> -GpuMatch <part of the GPU name>`, then `Start-VM -Name <vm>`.
+- `Done`: `Get-VMGpuPartitionAdapter` reports an `InstancePath` that contains the `-GpuMatch` text, a `PartitionId`, and a value for `CurrentPartitionVRAM`. `PartitionId` and `CurrentPartitionVRAM` are empty while the VM is off; the host fills them at start-up.
 - If not: `Start-VM` reports `0x800705AA`. The partition limits reserve more memory than the host allows. Restore the limits in the script.
 
 ### 7. Copy the driver
