@@ -86,3 +86,5 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 - A snapshot needs the GPU partition adapter detached. Run `scripts/hyperv/06-snapshot.ps1`. It detaches the adapter, takes the snapshot, and attaches the adapter again.
 - The guest account may have no password. PowerShell Direct then needs `LimitBlankPasswordUse = 0` inside the guest. `media/autounattend.xml` sets this value.
 - The guest restarts at least once between step 6 and step 8. Wait for PowerShell Direct after each restart before you continue.
+- Do not run `Stop-VM -TurnOff` while an update runs in the guest. A power cut during Windows Update or CBS activity corrupts the guest component store.
+- To repair a corrupted guest component store, mount the guest disk. Then run `dism /Image:<drive> /Cleanup-Image /RestoreHealth /Source:C:\Windows\WinSxS /LimitAccess`. The host component store works as the source when both builds match.
