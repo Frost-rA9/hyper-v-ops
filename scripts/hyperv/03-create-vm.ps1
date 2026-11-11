@@ -11,7 +11,7 @@
 param(
   [Parameter(Mandatory)][string]$Name,
   [int]$ProcessorCount        = 4,
-  [int]$MemoryGB              = 16,
+  [int]$MemoryGB              = 8,
   [Parameter(Mandatory)][string]$VhdPath,
   [int]$VhdSizeGB             = 150,
   [string]$SwitchName         = 'HvSwitch',
