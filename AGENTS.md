@@ -12,7 +12,7 @@ Entry point for an agent that operates this repository. Read this file before yo
 
 ## Worker
 
-The worker holds one elevated process open for the whole session. UAC changes the token of a new process only, so a direct call to each script asks for consent again.
+The worker holds one elevated process open for the whole session. UAC changes the token of a new process only. A direct call to each script therefore asks for consent again.
 
 1. Start `scripts/worker/worker.ps1` from an elevated PowerShell.
    - `Done`: the worker writes `worker.status.txt` and the file reports `elevated : True`.
@@ -59,14 +59,17 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 
 ### 6. Assign the GPU partition
 
-- Run: `Stop-VM -Name <vm>`, then `scripts/gpu-pv/01-host-partition.ps1 -Name <vm> -GpuMatch <part of the GPU name>`, then `Start-VM -Name <vm>`.
-- `Done`: `Get-VMGpuPartitionAdapter` reports an `InstancePath` that contains the `-GpuMatch` text, a `PartitionId`, and a value for `CurrentPartitionVRAM`. `PartitionId` and `CurrentPartitionVRAM` are empty while the VM is off; the host fills them at start-up.
+- Run: `Stop-VM -Name <vm>`.
+- Run: `scripts/gpu-pv/01-host-partition.ps1 -Name <vm> -GpuMatch <part of the GPU name>`.
+- Run: `Start-VM -Name <vm>`.
+- `Done`: `Get-VMGpuPartitionAdapter` reports an `InstancePath` that contains the `-GpuMatch` text, a `PartitionId`, and a value for `CurrentPartitionVRAM`. `PartitionId` and `CurrentPartitionVRAM` are empty while the VM is off. The host fills them at start-up.
 - If not: `Start-VM` reports `0x800705AA`. The partition limits reserve more memory than the host allows. Restore the limits in the script.
 
 ### 7. Copy the driver
 
-- Run: `scripts/files/push.ps1 -VMName <vm> -SourcePath <driver package> -DestDir <guest path> -VhdPath <vhdx> -User <account>`, then `scripts/gpu-pv/02-guest-driver.ps1 -PackagePath <guest path>`.
-- `Done`: `Get-PnpDevice -Class Display` reports `Status OK` for the vendor device, and the script prints no `Code 43`.
+- Run: `scripts/files/push.ps1 -VMName <vm> -SourcePath <driver package> -DestDir <guest path> -VhdPath <vhdx> -User <account>`.
+- Run: `scripts/gpu-pv/02-guest-driver.ps1 -PackagePath <guest path>`.
+- `Done`: `Get-PnpDevice -Class Display` reports `Status OK` for the vendor device. The script prints no `Code 43`.
 - If not: the device still reports `Code 43`. Copy all three locations named in the script header.
 
 ### 8. Install the virtual display driver and the server
@@ -83,8 +86,8 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 
 ## Notes
 
-- A snapshot needs the GPU partition adapter detached. Run `scripts/hyperv/06-snapshot.ps1`. It detaches the adapter, takes the snapshot, and attaches the adapter again.
+- Run `scripts/hyperv/06-snapshot.ps1` for a snapshot. Hyper-V refuses the operation while the VM holds a GPU partition adapter. The script detaches the adapter, snapshots the VM, and attaches the adapter again.
 - The guest account may have no password. PowerShell Direct then needs `LimitBlankPasswordUse = 0` inside the guest. `media/autounattend.xml` sets this value.
 - The guest restarts at least once between step 6 and step 8. Wait for PowerShell Direct after each restart before you continue.
 - Do not run `Stop-VM -TurnOff` while an update runs in the guest. A power cut during Windows Update or CBS activity corrupts the guest component store.
-- To repair a corrupted guest component store, mount the guest disk. Then run `dism /Image:<drive> /Cleanup-Image /RestoreHealth /Source:C:\Windows\WinSxS /LimitAccess`. The host component store works as the source when both builds match.
+- To restore a corrupted guest component store, mount the guest disk. Then run `dism /Image:<drive> /Cleanup-Image /RestoreHealth /Source:C:\Windows\WinSxS /LimitAccess`. The host component store works as the source when both builds match.

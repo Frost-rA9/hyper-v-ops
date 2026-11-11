@@ -1,6 +1,6 @@
 # hyper-v-ops
 
-Scripts that build and operate a Hyper-V virtual machine for remote game streaming. The VM uses GPU partitioning (GPU-PV), a virtual display driver, and a Sunshine server. The client is Moonlight.
+This repository holds scripts that build and operate a Hyper-V virtual machine for remote game streaming. The VM uses GPU partitioning (GPU-PV), a virtual display driver, and a Sunshine server. The client is Moonlight.
 
 An agent that operates this repository starts at `AGENTS.md`, which carries the ordered steps and the completion condition for each step.
 
@@ -24,6 +24,7 @@ An agent that operates this repository starts at `AGENTS.md`, which carries the 
 | `media/autounattend.xml` | Answer file for the unattended install |
 | `media/vdd_settings.xml` | Virtual display driver settings: two resolutions, three refresh rates |
 | `docs/color-fix.md` | FP16 capture colour fault: symptoms, measurements, root cause |
+| `docs/display-mode.md` | Display mode source, fault conditions, configuration |
 
 ## Running the scripts
 
@@ -39,23 +40,14 @@ The worker header documents the queue protocol and the timeout directive.
 
 ## Constraints
 
-- **Warning: the answer file creates an administrator with no password.** It also
-  clears `LimitBlankPasswordUse`, which lets that account log on over the
-  network. PowerShell Direct needs the setting. Use the file for a local test VM
-  only. Do not reuse it on a host with a bridged adapter, remote desktop, or a
-  route from the internet.
+- **Warning: the answer file creates an administrator with no password.** It clears
+  `LimitBlankPasswordUse` so PowerShell Direct can authenticate over the network. Use
+  the file only for a local test VM with no bridged adapter, remote desktop, or
+  internet route.
 - **Warning: the worker runs any script in its jobs folder as administrator.** Any
   account that can write to that folder can run code with the elevated token.
   Use the worker on a single-user machine.
-- **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files copied in, and a host driver update needs the copy repeated.
-- **A snapshot needs the adapter detached.** Hyper-V refuses the operation while GPU partitions are assigned to the VM. `scripts/hyperv/06-snapshot.ps1` detaches the adapter first.
+- **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files. Copy them into the guest. After a host driver update, copy them again.
+- **A snapshot needs the adapter detached.** Hyper-V refuses the operation while the VM holds a GPU partition. `scripts/hyperv/06-snapshot.ps1` detaches the adapter first.
 - **Builds before the FP16 fix produce a pale image on FP16 captures.** See `docs/color-fix.md`.
-- **The display mode comes from two places, and they must agree.** The virtual display
-  driver publishes the modes in `vdd_settings.xml`. A settings file with a single mode
-  leaves Windows with one choice. Sunshine then pins that choice when
-  `dd_resolution_option` is `manual`, and the client request never reaches the display.
-  Keep several resolutions in the settings file and set both `dd_resolution_option` and
-  `dd_refresh_rate_option` to `auto`, so the client picks the mode. The driver takes the
-  distinct width and height pairs as the resolution list, and the `global` block as the
-  refresh list for every resolution. The `refresh_rate` inside a `resolution` entry sets
-  the default for that pair.
+- **The display mode comes from two places, and they must agree.** The driver publishes modes from `vdd_settings.xml`, and Sunshine picks one. A single mode, or a `manual` selection, blocks the client request. See `docs/display-mode.md`.
