@@ -67,10 +67,12 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 
 ### 7. Copy the driver
 
+- Check the driver version first. Read `docs/driver-update.md`.
 - Run: `scripts/files/push.ps1 -VMName <vm> -SourcePath <driver package> -DestDir <guest path> -VhdPath <vhdx> -User <account>`.
 - Run: `scripts/gpu-pv/02-guest-driver.ps1 -PackagePath <guest path>`.
 - `Done`: `Get-PnpDevice -Class Display` reports `Status OK` for the vendor device. The script prints no `Code 43`.
 - If not: the device still reports `Code 43`. Copy all three locations named in the script header.
+- If the guest does not answer PowerShell Direct: write the driver files to the stopped disk. Read `docs/driver-update.md`.
 
 ### 8. Install the virtual display driver and the server
 
@@ -86,7 +88,7 @@ Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 s
 
 ## Notes
 
-- Run `scripts/hyperv/06-snapshot.ps1` for a snapshot. Hyper-V refuses the operation while the VM holds a GPU partition adapter. The script detaches the adapter, snapshots the VM, and attaches the adapter again.
+- Run `scripts/hyperv/06-snapshot.ps1` for a snapshot. Hyper-V refuses the operation while the VM holds a GPU partition adapter. The script detaches the adapter, snapshots the VM, and attaches the adapter again to the same GPU.
 - The guest account may have no password. PowerShell Direct then needs `LimitBlankPasswordUse = 0` inside the guest. `media/autounattend.xml` sets this value.
 - The guest restarts at least once between step 6 and step 8. Wait for PowerShell Direct after each restart before you continue.
 - Do not run `Stop-VM -TurnOff` while an update runs in the guest. A power cut during Windows Update or CBS activity corrupts the guest component store.

@@ -25,6 +25,7 @@ An agent that operates this repository starts at `AGENTS.md`, which carries the 
 | `media/vdd_settings.xml` | Virtual display driver settings: two resolutions, three refresh rates |
 | `docs/color-fix.md` | FP16 capture colour fault: symptoms, measurements, root cause |
 | `docs/display-mode.md` | Display mode source, fault conditions, configuration |
+| `docs/driver-update.md` | Guest display driver update: version check, online path, offline path |
 
 ## Running the scripts
 
@@ -47,7 +48,7 @@ The worker header documents the queue protocol and the timeout directive.
 - **Warning: the worker runs any script in its jobs folder as administrator.** Any
   account that can write to that folder can run code with the elevated token.
   Use the worker on a single-user machine.
-- **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files. Copy them into the guest. After a host driver update, copy them again.
+- **GPU-PV is not a supported configuration.** The vendor supports GPU partitioning on data-centre products only. The guest needs the host driver files. Copy them into the guest. After a host driver update, copy them again. See `docs/driver-update.md`.
 - **A snapshot needs the adapter detached.** Hyper-V refuses the operation while the VM holds a GPU partition. `scripts/hyperv/06-snapshot.ps1` detaches the adapter first.
 - **Builds before the FP16 fix produce a pale image on FP16 captures.** See `docs/color-fix.md`.
 - **The display mode comes from two places, and they must agree.** The driver publishes modes from `vdd_settings.xml`, and Sunshine picks one. A single mode, or a `manual` selection, blocks the client request. See `docs/display-mode.md`.
