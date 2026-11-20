@@ -7,6 +7,11 @@
 # adapter again after the rollback to get the GPU back.
 # Checkpoint-VM returns before the checkpoint is listed. Poll for it instead of
 # reading the list once.
+# Add-VMGpuPartitionAdapter without -InstancePath takes the first entry of
+# Get-VMHostPartitionableGpu. A host with an integrated GPU reports that GPU
+# first. The guest then boots with a partition whose driver files are absent and
+# bug checks during start-up. This script keeps the InstancePath of the adapter
+# it removed and attaches the same GPU again.
 param(
   [Parameter(Mandatory)][string]$Name,
   [Parameter(Mandatory)][string]$SnapshotName,
@@ -21,6 +26,15 @@ function Wait-Off([string]$vm) {
     Start-Sleep -Seconds 2
   }
   return $false
+}
+
+$gpuPath = $null
+$adapter = Get-VMGpuPartitionAdapter -VMName $Name -ErrorAction SilentlyContinue | Select-Object -First 1
+if ($adapter) {
+  $gpuPath = $adapter.InstancePath
+  Write-Output ('GPU partition adapter before the snapshot: ' + $gpuPath)
+} else {
+  Write-Output 'The VM holds no GPU partition adapter'
 }
 
 Write-Output 'Stopping VM'
@@ -52,8 +66,18 @@ if ($existing.Count -gt 0) {
   if (-not $seen) { Write-Output 'Checkpoint did not appear. Check the Hyper-V event log.' }
 }
 
-Write-Output 'Attaching GPU partition adapter'
-Add-VMGpuPartitionAdapter -VMName $Name -ErrorAction Continue
+if ($gpuPath) {
+  Write-Output 'Attaching GPU partition adapter'
+  Add-VMGpuPartitionAdapter -VMName $Name -InstancePath $gpuPath -ErrorAction Continue
+  $now = (Get-VMGpuPartitionAdapter -VMName $Name -ErrorAction SilentlyContinue | Select-Object -First 1).InstancePath
+  if ($now -eq $gpuPath) {
+    Write-Output 'Adapter attached to the same GPU'
+  } else {
+    Write-Output ('Warning: the adapter points at ' + $now + '. It must point at ' + $gpuPath)
+  }
+} else {
+  Write-Output 'No GPU partition adapter to attach'
+}
 
 # Keep these limits. Raising VRAM, Encode, Decode, and Compute to 8 GB makes
 # Start-VM fail with 0x800705AA, and the guest sees the full card anyway.
@@ -66,4 +90,4 @@ Set-VMGpuPartitionAdapter -VMName $Name -ErrorAction Continue `
 Start-VM -Name $Name -ErrorAction Continue
 
 Get-VMSnapshot -VMName $Name | Select-Object Name, CreationTime | Sort-Object CreationTime | Format-Table
-Get-VMGpuPartitionAdapter -VMName $Name | Format-List PartitionId, CurrentPartitionVRAM, CurrentPartitionEncode
+Get-VMGpuPartitionAdapter -VMName $Name | Format-List InstancePath, PartitionId, CurrentPartitionVRAM, CurrentPartitionEncode
