@@ -8,7 +8,8 @@
 #   in    .worker\jobs\<id>.ps1      job script (UTF-8, BOM optional)
 #   out   .worker\out\<id>.log       stdout + stderr, UTF-8
 #         .worker\out\<id>.json      metadata, written last (completion marker)
-#         .worker\out\<id>.ps1       the executed script, kept as a record
+#         .worker\out\<id>.ps1       the job source, kept as a record
+#   scratch .worker\scratch\<session>\  artefacts a job keeps for review
 #   ctrl  .worker\heartbeat.txt      rewritten on every poll
 #         .worker\stop.txt           create it to shut the worker down
 #         .worker\worker.log         worker level events
@@ -197,7 +198,9 @@ $stderr
   WriteText (Join-Path $OutDir ($id + '.json')) ($meta | ConvertTo-Json -Depth 4)
 
   Move-Item -LiteralPath $actPath -Destination (Join-Path $OutDir ($id + '.ps1')) -Force -ErrorAction SilentlyContinue
-  Move-Item -LiteralPath $runPath -Destination (Join-Path $OutDir ($id + '.run.ps1')) -Force -ErrorAction SilentlyContinue
+  # The run file is header + job source + footer, and the job source is archived
+  # as <id>.ps1, so the run file is deleted instead of kept.
+  Remove-Item -LiteralPath $runPath -Force -ErrorAction SilentlyContinue
 
   Log "job done  $id exit=$exitCode timedOut=$timedOut"
   Write-Host ("[{0}] done    {1} exit={2}" -f (Get-Date).ToString('HH:mm:ss'), $id, $exitCode) -ForegroundColor Green
@@ -223,8 +226,10 @@ while ($true) {
   Start-Sleep -Milliseconds $PollMs
 }
 
-Remove-Item -LiteralPath $LockPath -Force -ErrorAction SilentlyContinue
+# Shutdown. The status is written before the lock is removed, so a reader that
+# sees the lock gone always finds the final status.
 WriteText (Join-Path $Root 'worker.status.txt') ("stopped at " + (Get-Date).ToString('o'))
+Remove-Item -LiteralPath $LockPath -Force -ErrorAction SilentlyContinue
 Log 'exited'
 # The worker is normally started with -NoExit so that a crash keeps its window
 # readable. That also keeps the process alive after the script ends, which would

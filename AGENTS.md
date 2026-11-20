@@ -26,6 +26,10 @@ The worker holds one elevated process open for the whole session. UAC changes th
 
 Add `#TIMEOUT: <seconds>` on the first line of a task that needs more than 900 seconds.
 
+Each job leaves three files in `out`: `<id>.json` (written last, the completion marker), `<id>.log`, and `<id>.ps1` (the job source). The folder holds the newest 20 jobs. Run `scripts/worker/prune.ps1` to remove the older ones; `-Keep <n>` sets the count and `-WhatIf` reports without deleting.
+
+A job that keeps evidence for review later writes it to `.worker\scratch\<session>\`. The pruner never touches that folder.
+
 ## Steps
 
 ### 1. Enable Hyper-V
