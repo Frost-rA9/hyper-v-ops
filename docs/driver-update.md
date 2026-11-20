@@ -59,13 +59,36 @@ The host event log reports the fault in `Microsoft-Windows-Hyper-V-Worker-Admin`
 - Event 18590 with `ErrorCode0` 0x3B and `ErrorCode1` 0xC0000005.
 - Event 18514 (guest reset) and event 18601 in a loop.
 
+Event 18590 names no module. Both faults give the same codes.
+
 The guest integration services report that the guest does not answer. The counter `Uptime` keeps increasing while the guest does not answer.
+
+### Read the bug check from the guest disk
+
+The event log gives the codes. A minidump on the guest disk gives the same codes. The file times of all minidumps also tell whether the fault repeated.
+
+1. Stop the VM.
+2. Mount the disk read-only.
+3. Run this code. Replace `<volume>` with the drive letter of the mounted volume.
+
+```powershell
+$f  = Get-ChildItem '<volume>:\Windows\Minidump\*.dmp' | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+$fs = [IO.File]::OpenRead($f.FullName)
+$b  = New-Object byte[] 4096
+[void]$fs.Read($b, 0, 4096)
+$fs.Close()
+'bugcheck=0x{0:X8}  P1=0x{1:X}  P2=0x{2:X}' -f [BitConverter]::ToUInt32($b, 0x38), [BitConverter]::ToUInt64($b, 0x40), [BitConverter]::ToUInt64($b, 0x48)
+```
+
+On one host and one driver pair, every crash of this fault reported `P2` ending in `3152`. The high bits change on each boot because Windows randomises the load addresses. Treat the low bits as a hint that the same fault came back, not as proof.
+
+The code reads the bug check code at byte 0x38 of the dump. It reads the first two parameters at byte 0x40 and byte 0x48.
 
 ### Steps
 
 1. Run `Stop-VM -Name <vm>`. If the guest does not answer, run `Stop-VM -Name <vm> -TurnOff -Force`.
 2. Read the disk path with `(Get-VMHardDiskDrive -VMName <vm> | Where-Object ControllerLocation -eq 0).Path`.
-3. Run `Mount-VHD -Path <disk>`. Without `-ReadOnly` the mount is read-write.
+3. Run `Mount-VHD -Path <disk>`. Do not add `-ReadOnly` here, because the steps below write to the volume.
 4. Find the Windows volume and check two files. `Windows\WinSxS\pending.xml` and `Windows\System32\config\PendingRename` must not exist.
 5. Copy the host package folder to `Windows\System32\HostDriverStore\FileRepository\<package name>` on the volume.
 6. Copy the `nv*.dll` files from the top level of the package to `Windows\System32`.

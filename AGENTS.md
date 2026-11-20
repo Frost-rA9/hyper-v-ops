@@ -8,6 +8,7 @@ Entry point for an agent that operates this repository. Read this file before yo
 - Run one step. Read the `Done` condition. Continue only when the condition holds.
 - Pass every path and name as a parameter. The defaults are neutral values, not values for a specific host.
 - Report the `Done` result and the error text. A zero exit code alone does not prove that the step worked.
+- A non-zero exit code alone does not prove that the step failed. The worker reports the exit code of the last native command in the task, and `robocopy` returns 1 to 7 after it copies files. Read the task log before you report a failure.
 - Use the worker for a session with two steps or more. See "Worker" below.
 
 ## Worker
