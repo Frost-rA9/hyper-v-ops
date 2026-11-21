@@ -58,7 +58,10 @@ if ($isDir) {
 }
 $hostHash = $null
 if (-not $isDir) {
-  $hostHash = (certutil -hashfile (Join-Path $inbox $leaf) SHA256 | Select-Object -Index 1).Trim()
+  # Get-FileHash, not certutil: certutil returns -1 on a volume mounted by
+  # Mount-VHD and leaves $LASTEXITCODE set, which the worker reports as a
+  # failed task even when the copy succeeded.
+  $hostHash = (Get-FileHash -LiteralPath (Join-Path $inbox $leaf) -Algorithm SHA256).Hash
 }
 Dismount-VHD -Path $VhdPath
 Start-Sleep -Seconds 2
@@ -82,7 +85,7 @@ $result = Invoke-Command -VMName $VMName -Credential $cred -ErrorAction Stop -Sc
 
   $dst = Join-Path $DestDir $leaf
   Copy-Item -LiteralPath $src -Destination $dst -Force
-  $guestHash = (certutil -hashfile $dst SHA256 | Select-Object -Index 1).Trim()
+  $guestHash = (Get-FileHash -LiteralPath $dst -Algorithm SHA256).Hash
   return ("File copied: {0}, {1} bytes, SHA256 matches={2}" -f $dst, (Get-Item $dst).Length, ($guestHash -eq $hostHash))
 } -ArgumentList $leaf, $DestDir, $isDir, $hostHash
 
